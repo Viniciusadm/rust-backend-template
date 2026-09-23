@@ -1,6 +1,6 @@
+use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use axum::Json;
 
 use crate::api::dto::common::ErrorResponse;
 use crate::errors::{AppError, CodedKind};

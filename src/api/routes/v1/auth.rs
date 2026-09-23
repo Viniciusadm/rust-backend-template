@@ -30,7 +30,7 @@ async fn me(State(state): State<AppState>, auth: AuthenticatedUser) -> Response 
         Ok(None) => {
             return app_error(crate::errors::AppError::NotFound(
                 "user was not found".to_owned(),
-            ))
+            ));
         }
         Err(error) => return app_error(error),
     };

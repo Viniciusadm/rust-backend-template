@@ -25,7 +25,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         }
         Some(pool)
     } else {
-        warn!("DATABASE_URL not configured; API endpoints that require persistence will return configuration errors");
+        warn!(
+            "DATABASE_URL not configured; API endpoints that require persistence will return configuration errors"
+        );
         None
     };
 

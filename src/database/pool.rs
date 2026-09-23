@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use sqlx::mysql::MySqlPoolOptions;
 use sqlx::MySqlPool;
+use sqlx::mysql::MySqlPoolOptions;
 
 pub async fn connect(database_url: &str) -> Result<MySqlPool, sqlx::Error> {
     MySqlPoolOptions::new()

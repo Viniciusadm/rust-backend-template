@@ -1,4 +1,3 @@
-use axum::async_trait;
 use axum::extract::FromRequestParts;
 use axum::http::request::Parts;
 
@@ -12,7 +11,6 @@ pub struct AuthenticatedUser {
     pub user_id: String,
 }
 
-#[async_trait]
 impl FromRequestParts<AppState> for AuthenticatedUser {
     type Rejection = (axum::http::StatusCode, axum::Json<ErrorResponse>);
 

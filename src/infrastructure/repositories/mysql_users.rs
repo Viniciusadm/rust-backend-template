@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use sqlx::{MySqlPool, Row};
+use sqlx::{AssertSqlSafe, MySqlPool, Row};
 
 use crate::application::auth::{RegisterUserRecord, UserRepository};
 use crate::domain::users::User;
@@ -20,7 +20,7 @@ impl MySqlUserRepository {
         let sql = format!(
             "SELECT id, email, password_hash, display_name, is_active, last_login_at, created_at, updated_at FROM users WHERE {column} = ?"
         );
-        let row = sqlx::query(&sql)
+        let row = sqlx::query(AssertSqlSafe(sql))
             .bind(value)
             .fetch_optional(&self.pool)
             .await?;
@@ -44,10 +44,10 @@ impl MySqlUserRepository {
     }
 
     fn map_write_error(error: sqlx::Error) -> AppError {
-        if let sqlx::Error::Database(database_error) = &error {
-            if database_error.is_unique_violation() {
-                return AppError::Conflict("user already exists".to_owned());
-            }
+        if let sqlx::Error::Database(database_error) = &error
+            && database_error.is_unique_violation()
+        {
+            return AppError::Conflict("user already exists".to_owned());
         }
         AppError::from(error)
     }

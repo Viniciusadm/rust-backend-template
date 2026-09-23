@@ -1,10 +1,8 @@
-use argon2::password_hash::{
-    PasswordHash, PasswordHasher as ArgonPasswordHasher, PasswordVerifier, SaltString,
-};
 use argon2::Argon2;
+use argon2::password_hash::phc::PasswordHash;
+use argon2::password_hash::{PasswordHasher as ArgonPasswordHasher, PasswordVerifier};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation};
-use rand_core::OsRng;
 use serde::{Deserialize, Serialize};
 
 use crate::application::auth::{PasswordHasher, TokenIssuer, TokenVerifier};
@@ -15,9 +13,8 @@ pub struct Argon2PasswordHasher;
 
 impl PasswordHasher for Argon2PasswordHasher {
     fn hash_password(&self, password: &str) -> Result<String, AppError> {
-        let salt = SaltString::generate(&mut OsRng);
         Argon2::default()
-            .hash_password(password.as_bytes(), &salt)
+            .hash_password(password.as_bytes())
             .map(|hash| hash.to_string())
             .map_err(|error| AppError::Internal(format!("password hash failed: {error}")))
     }

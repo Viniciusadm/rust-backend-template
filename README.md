@@ -22,6 +22,14 @@ cargo generate --git <url-do-repo> --name meu-servico
 `--name meu-servico` define `project-name` (kebab-case) e `crate_name`
 (snake_case, ex.: `meu_servico`) automaticamente.
 
+## Requisitos
+
+- Rust **1.94+** (edition 2024; exigência do sqlx 0.9)
+- MySQL 8 para os endpoints com persistência
+
+Stack principal: axum 0.8, sqlx 0.9 (MySQL, rustls), jsonwebtoken 11
+(backend `rust_crypto`), argon2 0.6, tower-http 0.7.
+
 ## Rodar
 
 ```bash
