@@ -16,7 +16,9 @@ impl AppState {
 
     pub fn db(&self) -> Result<MySqlPool, crate::errors::AppError> {
         self.db.clone().ok_or_else(|| {
-            crate::errors::AppError::Configuration("database is not configured (set DB_DATABASE)".to_owned())
+            crate::errors::AppError::Configuration(
+                "database is not configured (set DB_DATABASE)".to_owned(),
+            )
         })
     }
 }

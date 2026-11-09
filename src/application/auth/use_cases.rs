@@ -27,21 +27,19 @@ where
     }
 
     pub async fn login(&self, command: LoginCommand) -> Result<AuthenticatedSession, AppError> {
-        let user = self
-            .users
-            .find_by_email(&command.email)
-            .await?
-            .ok_or_else(|| AppError::Unauthorized("invalid credentials".to_owned()))?;
-
-        if !user.is_active {
-            return Err(AppError::Unauthorized("inactive user".to_owned()));
-        }
+        let Some(user) = self.users.find_by_email(&command.email).await? else {
+            self.password_hasher
+                .verify_against_placeholder(&command.password)
+                .await;
+            return Err(invalid_credentials());
+        };
 
         let valid_password = self
             .password_hasher
-            .verify_password(&command.password, user.password_hash.as_str())?;
-        if !valid_password {
-            return Err(AppError::Unauthorized("invalid credentials".to_owned()));
+            .verify_password(&command.password, user.password_hash.as_str())
+            .await?;
+        if !valid_password || !user.is_active {
+            return Err(invalid_credentials());
         }
 
         Ok(AuthenticatedSession {
@@ -73,7 +71,10 @@ where
             .register_user(RegisterUserRecord {
                 user_id: user_id.clone(),
                 email,
-                password_hash: self.password_hasher.hash_password(&command.password)?,
+                password_hash: self
+                    .password_hasher
+                    .hash_password(&command.password)
+                    .await?,
                 display_name: display_name.clone(),
             })
             .await?;
@@ -84,6 +85,10 @@ where
             display_name,
         })
     }
+}
+
+fn invalid_credentials() -> AppError {
+    AppError::Unauthorized("invalid credentials".to_owned())
 }
 
 fn new_id() -> String {

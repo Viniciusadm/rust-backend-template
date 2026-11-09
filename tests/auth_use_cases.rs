@@ -27,6 +27,38 @@ async fn login_issues_token_for_valid_active_user() {
 }
 
 #[tokio::test]
+async fn login_rejects_unknown_email_with_generic_message() {
+    let use_cases = AuthUseCases::new(FakeUsers::default(), FakePasswords, FakeTokens);
+
+    let result = use_cases
+        .login(LoginCommand {
+            email: "nobody@example.com".to_owned(),
+            password: "correct".to_owned(),
+        })
+        .await;
+
+    assert!(
+        matches!(result, Err(AppError::Unauthorized(message)) if message == "invalid credentials")
+    );
+}
+
+#[tokio::test]
+async fn login_rejects_inactive_user_with_generic_message() {
+    let use_cases = AuthUseCases::new(FakeUsers::inactive(), FakePasswords, FakeTokens);
+
+    let result = use_cases
+        .login(LoginCommand {
+            email: "host@example.com".to_owned(),
+            password: "correct".to_owned(),
+        })
+        .await;
+
+    assert!(
+        matches!(result, Err(AppError::Unauthorized(message)) if message == "invalid credentials")
+    );
+}
+
+#[tokio::test]
 async fn register_creates_user_and_issues_token() {
     let users = FakeUsers::default();
     let use_cases = AuthUseCases::new(users.clone(), FakePasswords, FakeTokens);
@@ -92,6 +124,7 @@ async fn register_rejects_short_password() {
 #[derive(Clone, Default)]
 struct FakeUsers {
     existing_email: Option<String>,
+    inactive: bool,
     registered: Arc<Mutex<Vec<RegisterUserRecord>>>,
 }
 
@@ -99,6 +132,15 @@ impl FakeUsers {
     fn with_existing_email(email: &str) -> Self {
         Self {
             existing_email: Some(email.to_owned()),
+            inactive: false,
+            registered: Arc::default(),
+        }
+    }
+
+    fn inactive() -> Self {
+        Self {
+            existing_email: None,
+            inactive: true,
             registered: Arc::default(),
         }
     }
@@ -107,13 +149,13 @@ impl FakeUsers {
 #[async_trait]
 impl UserRepository for FakeUsers {
     async fn find_by_id(&self, id: &str) -> Result<Option<User>, AppError> {
-        Ok((id == "user-1").then(fake_user))
+        Ok((id == "user-1").then(|| fake_user(self.inactive)))
     }
 
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
         Ok(
             (email == "host@example.com" || self.existing_email.as_deref() == Some(email))
-                .then(fake_user),
+                .then(|| fake_user(self.inactive)),
         )
     }
 
@@ -125,12 +167,13 @@ impl UserRepository for FakeUsers {
 
 struct FakePasswords;
 
+#[async_trait]
 impl PasswordHasher for FakePasswords {
-    fn hash_password(&self, password: &str) -> Result<String, AppError> {
+    async fn hash_password(&self, password: &str) -> Result<String, AppError> {
         Ok(format!("hash-{password}"))
     }
 
-    fn verify_password(&self, password: &str, password_hash: &str) -> Result<bool, AppError> {
+    async fn verify_password(&self, password: &str, password_hash: &str) -> Result<bool, AppError> {
         Ok(password == "correct" && password_hash == "hash-correct")
     }
 }
@@ -143,13 +186,13 @@ impl TokenIssuer for FakeTokens {
     }
 }
 
-fn fake_user() -> User {
+fn fake_user(inactive: bool) -> User {
     User {
         id: id("user-1"),
         email: Email::new("host@example.com".to_owned()).unwrap(),
         password_hash: NonEmptyString::new("hash-correct".to_owned(), "password_hash").unwrap(),
         display_name: NonEmptyString::new("Host User".to_owned(), "display_name").unwrap(),
-        is_active: true,
+        is_active: !inactive,
         last_login_at: None,
         created_at: now(),
         updated_at: now(),

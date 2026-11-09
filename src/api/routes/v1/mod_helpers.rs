@@ -27,13 +27,18 @@ pub fn app_error(error: AppError) -> Response {
             (status, *code)
         }
     };
+    let message = match &error {
+        AppError::Persistence(_) | AppError::Internal(_) => {
+            tracing::error!(%error, "request failed with an internal error");
+            "internal server error".to_owned()
+        }
+        _ => error.client_message().to_owned(),
+    };
     (
         status,
         Json(ErrorResponse {
             code: code.to_owned(),
-            // The body carries the message without the technical type prefix;
-            // `error.to_string()` (with prefix) is reserved for logs/tracing.
-            message: error.client_message().to_owned(),
+            message,
         }),
     )
         .into_response()

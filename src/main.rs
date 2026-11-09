@@ -16,7 +16,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Err(err) => warn!("failed to load .env file: {err}"),
     }
 
-    let config = AppConfig::from_env();
+    let config = AppConfig::from_env()?;
     let db = if let Some(database_config) = &config.database {
         let pool = database::pool::connect(database_config).await?;
         if config.run_migrations {
@@ -31,7 +31,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         None
     };
 
-    let app = api::router(api::state::AppState::new(db, config.jwt_secret.clone()));
+    let app = api::router(
+        api::state::AppState::new(db, config.jwt_secret.clone()),
+        &config.cors_origins,
+    );
     let listener = TcpListener::bind(config.http_addr()).await?;
 
     info!("backend listening on {}", config.http_addr());

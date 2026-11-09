@@ -61,7 +61,9 @@ Endpoints of the example slice:
 | `DB_DATABASE` | none | MySQL database name; without it there is no persistence |
 | `DB_USERNAME` | `root` | MySQL user |
 | `DB_PASSWORD` | empty | MySQL password |
-| `JWT_SECRET` | `development-only-secret` | JWT signing secret; change it in production |
+| `APP_ENV` | `local` | Set to `production` to make `JWT_SECRET` mandatory |
+| `JWT_SECRET` | `development-only-secret` | JWT signing secret; with `APP_ENV=production` it must be custom and at least 32 characters, otherwise the app refuses to start |
+| `CORS_ORIGINS` | empty | Comma-separated allowed origins; empty allows any origin |
 | `RUN_MIGRATIONS` | `true` | Runs migrations on boot; `0`, `false` or `no` turn it off |
 
 ## Architecture

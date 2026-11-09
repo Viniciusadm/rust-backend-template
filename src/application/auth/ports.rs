@@ -18,9 +18,12 @@ pub trait UserRepository: Send + Sync {
     async fn register_user(&self, record: RegisterUserRecord) -> Result<(), AppError>;
 }
 
+#[async_trait]
 pub trait PasswordHasher: Send + Sync {
-    fn hash_password(&self, password: &str) -> Result<String, AppError>;
-    fn verify_password(&self, password: &str, password_hash: &str) -> Result<bool, AppError>;
+    async fn hash_password(&self, password: &str) -> Result<String, AppError>;
+    async fn verify_password(&self, password: &str, password_hash: &str) -> Result<bool, AppError>;
+
+    async fn verify_against_placeholder(&self, _password: &str) {}
 }
 
 pub trait TokenIssuer: Send + Sync {
