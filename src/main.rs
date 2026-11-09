@@ -17,8 +17,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     }
 
     let config = AppConfig::from_env();
-    let db = if let Some(database_url) = &config.database_url {
-        let pool = database::pool::connect(database_url).await?;
+    let db = if let Some(database_config) = &config.database {
+        let pool = database::pool::connect(database_config).await?;
         if config.run_migrations {
             info!("running database migrations");
             sqlx::migrate!("./migrations").run(&pool).await?;
@@ -26,7 +26,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         Some(pool)
     } else {
         warn!(
-            "DATABASE_URL not configured; API endpoints that require persistence will return configuration errors"
+            "DB_DATABASE not configured; API endpoints that require persistence will return configuration errors"
         );
         None
     };

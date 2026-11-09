@@ -29,13 +29,13 @@ Main crates: axum 0.8, sqlx 0.9 (MySQL, rustls), jsonwebtoken 11 (`rust_crypto` 
 
 ## Run locally
 
-Copy the example environment and set `DATABASE_URL` and `JWT_SECRET`:
+Copy the example environment and set the `DB_*` variables and `JWT_SECRET`:
 
 ```bash
 cp .env.example .env
 ```
 
-Start the API. Without `DATABASE_URL` it still starts, but the endpoints that need the database answer 503. Migrations in [`migrations`](migrations) run on boot unless `RUN_MIGRATIONS` is off.
+Start the API. Without `DB_DATABASE` it still starts, but the endpoints that need the database answer 503. Migrations in [`migrations`](migrations) run on boot unless `RUN_MIGRATIONS` is off.
 
 ```bash
 cargo run
@@ -56,7 +56,11 @@ Endpoints of the example slice:
 | --- | --- | --- |
 | `HTTP_HOST` | `127.0.0.1` | Bind address |
 | `HTTP_PORT` | `3001` | Port |
-| `DATABASE_URL` | none | MySQL connection; without it there is no persistence |
+| `DB_HOST` | `127.0.0.1` | MySQL host |
+| `DB_PORT` | `3306` | MySQL port |
+| `DB_DATABASE` | none | MySQL database name; without it there is no persistence |
+| `DB_USERNAME` | `root` | MySQL user |
+| `DB_PASSWORD` | empty | MySQL password |
 | `JWT_SECRET` | `development-only-secret` | JWT signing secret; change it in production |
 | `RUN_MIGRATIONS` | `true` | Runs migrations on boot; `0`, `false` or `no` turn it off |
 
