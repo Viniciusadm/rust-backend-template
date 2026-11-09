@@ -76,4 +76,12 @@ impl UserRepository for MySqlUserRepository {
         .map_err(Self::map_write_error)?;
         Ok(())
     }
+
+    async fn record_login(&self, id: &str) -> Result<(), AppError> {
+        sqlx::query("UPDATE users SET last_login_at = CURRENT_TIMESTAMP(6) WHERE id = ?")
+            .bind(id)
+            .execute(&self.pool)
+            .await?;
+        Ok(())
+    }
 }

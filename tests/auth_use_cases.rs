@@ -12,7 +12,8 @@ use {{crate_name}}::errors::AppError;
 
 #[tokio::test]
 async fn login_issues_token_for_valid_active_user() {
-    let use_cases = AuthUseCases::new(FakeUsers::default(), FakePasswords, FakeTokens);
+    let users = FakeUsers::default();
+    let use_cases = AuthUseCases::new(users.clone(), FakePasswords, FakeTokens);
 
     let session = use_cases
         .login(LoginCommand {
@@ -24,6 +25,7 @@ async fn login_issues_token_for_valid_active_user() {
 
     assert_eq!(session.user_id, "user-1");
     assert_eq!(session.access_token, "token-for-user-1");
+    assert_eq!(*users.logins.lock().unwrap(), vec!["user-1".to_owned()]);
 }
 
 #[tokio::test]
@@ -126,6 +128,7 @@ struct FakeUsers {
     existing_email: Option<String>,
     inactive: bool,
     registered: Arc<Mutex<Vec<RegisterUserRecord>>>,
+    logins: Arc<Mutex<Vec<String>>>,
 }
 
 impl FakeUsers {
@@ -134,6 +137,7 @@ impl FakeUsers {
             existing_email: Some(email.to_owned()),
             inactive: false,
             registered: Arc::default(),
+            logins: Arc::default(),
         }
     }
 
@@ -142,6 +146,7 @@ impl FakeUsers {
             existing_email: None,
             inactive: true,
             registered: Arc::default(),
+            logins: Arc::default(),
         }
     }
 }
@@ -161,6 +166,11 @@ impl UserRepository for FakeUsers {
 
     async fn register_user(&self, record: RegisterUserRecord) -> Result<(), AppError> {
         self.registered.lock().unwrap().push(record);
+        Ok(())
+    }
+
+    async fn record_login(&self, id: &str) -> Result<(), AppError> {
+        self.logins.lock().unwrap().push(id.to_owned());
         Ok(())
     }
 }

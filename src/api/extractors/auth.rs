@@ -1,9 +1,10 @@
 use axum::extract::FromRequestParts;
+use axum::http::header::AUTHORIZATION;
 use axum::http::request::Parts;
 
-use crate::api::dto::common::ErrorResponse;
 use crate::api::state::AppState;
 use crate::application::auth::TokenVerifier;
+use crate::errors::AppError;
 use crate::infrastructure::auth::JwtTokenService;
 
 #[derive(Debug, Clone)]
@@ -12,7 +13,7 @@ pub struct AuthenticatedUser {
 }
 
 impl FromRequestParts<AppState> for AuthenticatedUser {
-    type Rejection = (axum::http::StatusCode, axum::Json<ErrorResponse>);
+    type Rejection = AppError;
 
     async fn from_request_parts(
         parts: &mut Parts,
@@ -20,32 +21,14 @@ impl FromRequestParts<AppState> for AuthenticatedUser {
     ) -> Result<Self, Self::Rejection> {
         let token = parts
             .headers
-            .get(axum::http::header::AUTHORIZATION)
+            .get(AUTHORIZATION)
             .and_then(|value| value.to_str().ok())
             .and_then(|value| value.strip_prefix("Bearer "))
-            .filter(|value| !value.trim().is_empty())
-            .map(ToOwned::to_owned)
-            .ok_or_else(|| {
-                (
-                    axum::http::StatusCode::UNAUTHORIZED,
-                    axum::Json(ErrorResponse {
-                        code: "unauthorized".to_owned(),
-                        message: "missing bearer token".to_owned(),
-                    }),
-                )
-            })?;
+            .map(str::trim)
+            .filter(|value| !value.is_empty())
+            .ok_or_else(|| AppError::Unauthorized("missing bearer token".to_owned()))?;
 
-        let user_id = JwtTokenService::new(state.jwt_secret.clone())
-            .verify_access_token(&token)
-            .map_err(|error| {
-                (
-                    axum::http::StatusCode::UNAUTHORIZED,
-                    axum::Json(ErrorResponse {
-                        code: "unauthorized".to_owned(),
-                        message: error.to_string(),
-                    }),
-                )
-            })?;
+        let user_id = JwtTokenService::new(state.jwt_secret.clone()).verify_access_token(token)?;
 
         Ok(Self { user_id })
     }

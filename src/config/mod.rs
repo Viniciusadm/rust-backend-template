@@ -9,6 +9,7 @@ pub struct DatabaseConfig {
     pub database: String,
     pub username: String,
     pub password: String,
+    pub max_connections: u32,
 }
 
 impl DatabaseConfig {
@@ -23,6 +24,7 @@ impl DatabaseConfig {
             .unwrap_or(3306);
         let username = env::var("DB_USERNAME").unwrap_or_else(|_| "root".to_owned());
         let password = env::var("DB_PASSWORD").unwrap_or_default();
+        let max_connections = parse_or("DB_MAX_CONNECTIONS", 30);
 
         Some(Self {
             host,
@@ -30,6 +32,7 @@ impl DatabaseConfig {
             database,
             username,
             password,
+            max_connections,
         })
     }
 }
@@ -55,6 +58,8 @@ pub struct AppConfig {
     pub database: Option<DatabaseConfig>,
     pub jwt_secret: String,
     pub cors_origins: Vec<String>,
+    pub auth_rate_limit_max: u32,
+    pub auth_rate_limit_window_seconds: u64,
     pub run_migrations: bool,
 }
 
@@ -73,6 +78,8 @@ impl AppConfig {
             .map(|value| value.eq_ignore_ascii_case("production"))
             .unwrap_or(false);
         let jwt_secret = resolve_jwt_secret(env::var("JWT_SECRET").ok(), is_production)?;
+        let auth_rate_limit_max = parse_or("AUTH_RATE_LIMIT_MAX", 10);
+        let auth_rate_limit_window_seconds = parse_or("AUTH_RATE_LIMIT_WINDOW_SECONDS", 60);
         let cors_origins = parse_origins(&env::var("CORS_ORIGINS").unwrap_or_default());
         let run_migrations = env::var("RUN_MIGRATIONS")
             .map(|value| !matches!(value.as_str(), "0" | "false" | "FALSE" | "no" | "NO"))
@@ -84,6 +91,8 @@ impl AppConfig {
             database,
             jwt_secret,
             cors_origins,
+            auth_rate_limit_max,
+            auth_rate_limit_window_seconds,
             run_migrations,
         })
     }
@@ -108,6 +117,13 @@ fn resolve_jwt_secret(value: Option<String>, is_production: bool) -> Result<Stri
             "JWT_SECRET must be set to a custom value with at least {MIN_PRODUCTION_JWT_SECRET_LENGTH} characters when APP_ENV=production"
         ))),
     }
+}
+
+fn parse_or<T: std::str::FromStr>(name: &str, default: T) -> T {
+    env::var(name)
+        .ok()
+        .and_then(|value| value.parse().ok())
+        .unwrap_or(default)
 }
 
 fn parse_origins(value: &str) -> Vec<String> {

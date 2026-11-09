@@ -14,7 +14,7 @@ pub async fn connect(config: &DatabaseConfig) -> Result<MySqlPool, sqlx::Error> 
         .password(&config.password);
 
     MySqlPoolOptions::new()
-        .max_connections(30)
+        .max_connections(config.max_connections)
         .acquire_timeout(Duration::from_secs(10))
         .connect_with(options)
         .await

@@ -61,10 +61,21 @@ Endpoints of the example slice:
 | `DB_DATABASE` | none | MySQL database name; without it there is no persistence |
 | `DB_USERNAME` | `root` | MySQL user |
 | `DB_PASSWORD` | empty | MySQL password |
+| `DB_MAX_CONNECTIONS` | `30` | MySQL pool size |
+| `AUTH_RATE_LIMIT_MAX` | `10` | Login and register attempts allowed per IP in the window; `0` disables the limit |
+| `AUTH_RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate limit window |
 | `APP_ENV` | `local` | Set to `production` to make `JWT_SECRET` mandatory |
 | `JWT_SECRET` | `development-only-secret` | JWT signing secret; with `APP_ENV=production` it must be custom and at least 32 characters, otherwise the app refuses to start |
 | `CORS_ORIGINS` | empty | Comma-separated allowed origins; empty allows any origin |
 | `RUN_MIGRATIONS` | `true` | Runs migrations on boot; `0`, `false` or `no` turn it off |
+
+## Docker
+
+```bash
+docker compose up --build
+```
+
+Starts MySQL and the API on port 3001, with migrations applied on boot.
 
 ## Architecture
 

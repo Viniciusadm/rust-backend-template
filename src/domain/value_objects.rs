@@ -74,3 +74,12 @@ pub enum DomainValidationError {
     Empty(&'static str),
     Invalid(&'static str),
 }
+
+impl std::fmt::Display for DomainValidationError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Empty(field) => write!(f, "{field} must not be empty"),
+            Self::Invalid(field) => write!(f, "{field} is invalid"),
+        }
+    }
+}

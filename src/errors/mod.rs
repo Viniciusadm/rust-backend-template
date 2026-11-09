@@ -8,6 +8,7 @@ pub enum AppError {
     Internal(String),
     NotFound(String),
     Persistence(String),
+    TooManyRequests(String),
     Unauthorized(String),
     Validation(String),
     /// A client-facing error carrying a stable machine `code` the frontend maps
@@ -64,6 +65,7 @@ impl AppError {
             | Self::Internal(message)
             | Self::NotFound(message)
             | Self::Persistence(message)
+            | Self::TooManyRequests(message)
             | Self::Unauthorized(message)
             | Self::Validation(message)
             | Self::Coded { message, .. } => message,
@@ -80,6 +82,7 @@ impl fmt::Display for AppError {
             Self::Internal(message) => write!(f, "internal error: {message}"),
             Self::NotFound(message) => write!(f, "not found: {message}"),
             Self::Persistence(message) => write!(f, "persistence error: {message}"),
+            Self::TooManyRequests(message) => write!(f, "too many requests: {message}"),
             Self::Unauthorized(message) => write!(f, "unauthorized: {message}"),
             Self::Validation(message) => write!(f, "validation error: {message}"),
             Self::Coded { code, message, .. } => write!(f, "{code}: {message}"),
@@ -97,6 +100,6 @@ impl From<sqlx::Error> for AppError {
 
 impl From<crate::domain::DomainValidationError> for AppError {
     fn from(value: crate::domain::DomainValidationError) -> Self {
-        Self::Validation(format!("{value:?}"))
+        Self::Validation(value.to_string())
     }
 }

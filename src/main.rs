@@ -1,3 +1,7 @@
+use std::net::SocketAddr;
+use std::time::Duration;
+
+use {{crate_name}}::api::rate_limit::RateLimiter;
 use {{crate_name}}::{api, config::AppConfig, database};
 use tokio::net::TcpListener;
 use tracing::{info, warn};
@@ -31,14 +35,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         None
     };
 
-    let app = api::router(
-        api::state::AppState::new(db, config.jwt_secret.clone()),
-        &config.cors_origins,
+    let rate_limiter = RateLimiter::new(
+        config.auth_rate_limit_max,
+        Duration::from_secs(config.auth_rate_limit_window_seconds),
     );
+    let state =
+        api::state::AppState::new(db, config.jwt_secret.clone()).with_rate_limiter(rate_limiter);
+    let app = api::router(state, &config.cors_origins);
     let listener = TcpListener::bind(config.http_addr()).await?;
 
     info!("backend listening on {}", config.http_addr());
-    axum::serve(listener, app).await?;
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
 
     Ok(())
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        let _ = tokio::signal::ctrl_c().await;
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        if let Ok(mut signal) =
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+        {
+            signal.recv().await;
+        }
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {}
+        _ = terminate => {}
+    }
+
+    info!("shutdown signal received");
 }

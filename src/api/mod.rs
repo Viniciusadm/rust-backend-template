@@ -1,5 +1,7 @@
 pub mod dto;
+pub mod error;
 pub mod extractors;
+pub mod rate_limit;
 pub mod routes;
 pub mod state;
 
@@ -13,7 +15,7 @@ use state::AppState;
 pub fn router(state: AppState, cors_origins: &[String]) -> Router {
     Router::<AppState>::new()
         .merge(routes::health::router())
-        .nest("/api/v1", routes::v1::router())
+        .nest("/api/v1", routes::v1::router(&state))
         .with_state(state)
         .layer(cors_layer(cors_origins))
         .layer(TraceLayer::new_for_http())

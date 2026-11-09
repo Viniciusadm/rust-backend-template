@@ -42,6 +42,8 @@ where
             return Err(invalid_credentials());
         }
 
+        self.users.record_login(user.id.as_str()).await?;
+
         Ok(AuthenticatedSession {
             access_token: self.token_issuer.issue_access_token(user.id.as_str())?,
             user_id: user.id.as_str().to_owned(),
@@ -57,7 +59,7 @@ where
             .as_str()
             .to_owned();
         let email = Email::new(command.email)?.as_str().to_owned();
-        if command.password.len() < 8 || command.password.len() > 128 {
+        if !(8..=128).contains(&command.password.chars().count()) {
             return Err(AppError::Validation(
                 "password must be between 8 and 128 characters".to_owned(),
             ));

@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::application::auth::{LoginCommand, RegisterCommand};
+use crate::application::auth::{AuthenticatedSession, LoginCommand, RegisterCommand};
 
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
@@ -40,6 +40,17 @@ pub struct LoginResponse {
     pub token_type: String,
     pub user_id: String,
     pub display_name: String,
+}
+
+impl From<AuthenticatedSession> for LoginResponse {
+    fn from(session: AuthenticatedSession) -> Self {
+        Self {
+            access_token: session.access_token,
+            token_type: "Bearer".to_owned(),
+            user_id: session.user_id,
+            display_name: session.display_name,
+        }
+    }
 }
 
 #[derive(Debug, Serialize)]
