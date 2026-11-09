@@ -1,0 +1,34 @@
+name: Template CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+jobs:
+  generated-project:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-generate
+      - name: Generate a project from the template
+        run: cargo generate --path . --name ci-app --destination "$RUNNER_TEMP" --silent
+      - name: Check the generated CI workflow exists
+        run: test -f "$RUNNER_TEMP/ci-app/.github/workflows/ci.yml"
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ runner.temp }}/ci-app
+      - name: Format
+        working-directory: ${{ runner.temp }}/ci-app
+        run: cargo fmt --all --check
+      - name: Clippy
+        working-directory: ${{ runner.temp }}/ci-app
+        run: cargo clippy --all-targets -- -D warnings
+      - name: Test
+        working-directory: ${{ runner.temp }}/ci-app
+        run: cargo test

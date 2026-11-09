@@ -1,9 +1,6 @@
 [template]
 description = "Backend Rust — arquitetura hexagonal (axum + sqlx/mysql + jwt)"
-# `target/` e `.env` nunca devem ir para um projeto gerado.
-exclude = ["target", ".env"]
+ignore = ["target", ".env", ".github/workflows/template-ci.yml"]
 
-# `project-name` (kebab-case) e `crate_name` (snake_case) são variáveis
-# nativas do cargo-generate, derivadas de `--name`. Não precisam ser
-# declaradas aqui; basta usá-las nos arquivos como {{project-name}} e
-# {{crate_name}}.
+[hooks]
+post = ["post.rhai"]
